@@ -6,6 +6,7 @@ const express = require('express');
 const qs = require('query-string');
 const jwt = require('jsonwebtoken');
 const Redis = require('ioredis');
+const logger = require('vsnet-logger');
 
 function noop() {}
 
@@ -24,8 +25,7 @@ class VsSocket {
       secret,
       pubsub,
       store,
-      pingInterval = DEFAULT_PING_INTERVAL,
-      logger
+      pingInterval = DEFAULT_PING_INTERVAL
     } = options;
 
     this.port = port;
