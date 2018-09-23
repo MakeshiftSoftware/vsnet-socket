@@ -31,9 +31,8 @@ class VsSocket {
     this.port = port;
     this.secret = secret;
     this.pingInterval = pingInterval;
-    this.logger = logger;
 
-    this.logger.info('[socket] Initializing socket server');
+    logger.info('[socket] Initializing socket server');
 
     this.users = {};
     this.handlers = {};
@@ -54,7 +53,7 @@ class VsSocket {
    * Initialize app and routes
    */
   initApp() {
-    this.logger.info('[socket] Initializing express app');
+    logger.info('[socket] Initializing express app');
 
     const server = this;
 
@@ -87,7 +86,7 @@ class VsSocket {
    * Initialize http server and websocket server
    */
   initServer() {
-    this.logger.info('[socket] Initializing express server');
+    logger.info('[socket] Initializing express server');
 
     const server = http.createServer(this.app);
 
@@ -122,7 +121,7 @@ class VsSocket {
       // When a slave is promoted, we might get temporary errors when
       // attempting to write against a read only slave. Attempt to
       // reconnect if this happens
-      this.logger.info('[socket] Redis returned a READONLY error, reconnecting');
+      logger.info('[socket] Redis returned a READONLY error, reconnecting');
 
       // return 2 to reconnect and resend the failed command
       return 2;
@@ -135,7 +134,7 @@ class VsSocket {
    * @param {Object} config - Store config
    */
   initStore(config) {
-    this.logger.info('[socket] Initializing redis store');
+    logger.info('[socket] Initializing redis store');
 
     const options = {
       lazyConnect: true,
@@ -152,18 +151,18 @@ class VsSocket {
     this.store = new Redis(config.url, options);
 
     function onReady() {
-      this.logger.info('[socket] Redis store ready to receive commands');
+      logger.info('[socket] Redis store ready to receive commands');
     }
 
     function onError() {
-      this.logger.info('[socket] Error connecting to redis store, retrying');
+      logger.info('[socket] Error connecting to redis store, retrying');
     }
 
     this.store.on('ready', onReady);
     this.store.on('error', onError);
 
     this.store.connect().catch(function() {
-      this.logger.info('[socket] Initial redis store connection attempt failed');
+      logger.info('[socket] Initial redis store connection attempt failed');
     });
   }
 
@@ -173,7 +172,7 @@ class VsSocket {
    * @param {Object} config - Pubsub config
    */
   initPubsub(config) {
-    this.logger.info('[socket] Initializing redis pubsub');
+    logger.info('[socket] Initializing redis pubsub');
 
     const options = {
       lazyConnect: true,
@@ -197,12 +196,12 @@ class VsSocket {
     }
 
     function onMessage(channel, message) {
-      this.logger.info('[socket] Received pubsub message: ' + message);
+      logger.info('[socket] Received pubsub message: ' + message);
 
       const m = this.parseMessage(message);
 
       if (m && m.data && m.recipient) {
-        this.logger.info('[socket] Publishing message');
+        logger.info('[socket] Publishing message');
 
         if (Array.isArray(m.recipient)) {
           this.relayMulti(m.data, m.recipient);
@@ -213,11 +212,11 @@ class VsSocket {
     }
 
     function onReady() {
-      this.logger.info('[socket] Redis pubsub ready to receive commands');
+      logger.info('[socket] Redis pubsub ready to receive commands');
     }
 
     function onError() {
-      this.logger.info('[socket] Error connecting to redis pubsub, retrying');
+      logger.info('[socket] Error connecting to redis pubsub, retrying');
     }
 
     this.sub.on('message', onMessage);
@@ -227,11 +226,11 @@ class VsSocket {
     this.pub.on('error', onError);
 
     this.sub.connect().catch(function() {
-      this.logger.info('[socket] Initial redis subscribe connection attempt failed');
+      logger.info('[socket] Initial redis subscribe connection attempt failed');
     });
 
     this.pub.connect().catch(function() {
-      this.logger.info('[socket] Initial redis publish connection attempt failed');
+      logger.info('[socket] Initial redis publish connection attempt failed');
     });
   }
 
@@ -242,12 +241,12 @@ class VsSocket {
    * @param {Function} cb - Callback function
    */
   start(cb) {
-    this.logger.info('[socket] Starting socket server');
+    logger.info('[socket] Starting socket server');
 
     const server = this;
 
     this.server.listen(this.port, function() {
-      this.logger.info('[socket] Socket server started on port ' + server.port);
+      logger.info('[socket] Socket server started on port ' + server.port);
 
       setInterval(server.ping.bind(server), server.pingInterval);
 
@@ -262,7 +261,7 @@ class VsSocket {
    * Close redis connections
    */
   stop() {
-    this.logger.info('[socket] Stopping socket server');
+    logger.info('[socket] Stopping socket server');
 
     const actions = [];
 
@@ -343,7 +342,7 @@ class VsSocket {
       server.handlers.connected(socket);
     }
 
-    this.logger.info('[socket] New socket connection with id: ' + user.id);
+    logger.info('[socket] New socket connection with id: ' + user.id);
   }
 
   /**
@@ -360,7 +359,7 @@ class VsSocket {
       server.handlers.disconnected(socket);
     }
 
-    this.logger.info('[socket] Socket disconnected: ' + socket.id);
+    logger.info('[socket] Socket disconnected: ' + socket.id);
   }
 
   /**
@@ -384,7 +383,7 @@ class VsSocket {
       const socket = server.wss.clients[i];
 
       if (socket.isAlive === false) {
-        this.logger.info('[socket] Cleaning up dead socket: ' + socket.id);
+        logger.info('[socket] Cleaning up dead socket: ' + socket.id);
 
         delete server.users[socket.id];
         return socket.terminate();
@@ -402,7 +401,7 @@ class VsSocket {
    * @param {Object} socket - Socket object
    */
   onMessageReceived(message, socket) {
-    this.logger.info('[socket] Received socket data: ' + message);
+    logger.info('[socket] Received socket data: ' + message);
 
     const m = this.parseMessage(message);
 
@@ -429,7 +428,7 @@ class VsSocket {
         recipient: m.recipient
       };
     } catch (err) {
-      this.logger.error('[socket] Unable to parse message: ' + err.message);
+      logger.error('[socket] Unable to parse message: ' + err.message);
     }
   }
 
@@ -467,7 +466,7 @@ class VsSocket {
     const socket = this.users[id];
 
     if (socket) {
-      this.logger.info('[socket] Recipient socket found, sending message');
+      logger.info('[socket] Recipient socket found, sending message');
 
       this.sendMessage(data, socket);
     }
@@ -484,7 +483,7 @@ class VsSocket {
       const socket = this.users[ids[i]];
 
       if (socket) {
-        this.logger.info('[socket] Recipient socket found, sending message');
+        logger.info('[socket] Recipient socket found, sending message');
 
         this.sendMessage(data, socket);
       }
@@ -498,7 +497,7 @@ class VsSocket {
    * @param {String} script - Lua script text
    */
   defineCommand(name, script) {
-    this.logger.info('[socket] Defining custom redis command: ' + name);
+    logger.info('[socket] Defining custom redis command: ' + name);
 
     this.store.defineCommand(name, {
       lua: script,
