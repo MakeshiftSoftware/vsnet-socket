@@ -37,6 +37,7 @@ class VsSocket {
     this.users = {};
     this.handlers = {};
 
+    logger.info('[socket] Store: ' + store);
     if (store) {
       this.initStore(store);
     }
@@ -287,6 +288,7 @@ class VsSocket {
    * @param {String} secret - Server secret
    */
   verifyClient(secret) {
+    logger.info('[socket] Verifying client');
     if (!secret) {
       return;
     }
