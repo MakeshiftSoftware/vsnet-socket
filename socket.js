@@ -298,12 +298,13 @@ class VsSocket {
         return cb(false);
       }
 
+      console.log('secret', secret);
+      console.log('token', token);
       jwt.verify(token, secret, function(err, decoded) {
         if (err) {
+          console.log('err', err);
           cb(false);
-          logger.info('[socket] verification failed');
         } else {
-          logger.info('[socket] verification success: ', + decoded);
           info.req.user = decoded;
           cb(true);
         }
