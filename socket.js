@@ -292,9 +292,7 @@ class VsSocket {
     }
 
     return function(info, cb) {
-      logger.info('[socket] Verifying client');
       const token = qs.parse(url.parse(info.req.url).search).token;
-      logger.info('[socket] Token: ' + token);
 
       if (!token) {
         return cb(false);
@@ -303,7 +301,9 @@ class VsSocket {
       jwt.verify(token, secret, function(err, decoded) {
         if (err) {
           cb(false);
+          logger.info('[socket] verification failed');
         } else {
+          logger.info('[socket] verification success: ', + decoded);
           info.req.user = decoded;
           cb(true);
         }
