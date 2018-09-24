@@ -37,7 +37,6 @@ class VsSocket {
     this.users = {};
     this.handlers = {};
 
-    logger.info('[socket] Store: ' + store);
     if (store) {
       this.initStore(store);
     }
@@ -288,13 +287,14 @@ class VsSocket {
    * @param {String} secret - Server secret
    */
   verifyClient(secret) {
-    logger.info('[socket] Verifying client');
     if (!secret) {
       return;
     }
 
     return function(info, cb) {
+      logger.info('[socket] Verifying client');
       const token = qs.parse(url.parse(info.req.url).search).token;
+      logger.info('[socket] Token: ' + token);
 
       if (!token) {
         return cb(false);
