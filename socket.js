@@ -298,11 +298,8 @@ class VsSocket {
         return cb(false);
       }
 
-      console.log('secret', secret);
-      console.log('token', token);
       jwt.verify(token, secret, function(err, decoded) {
         if (err) {
-          console.log('err', err);
           cb(false);
         } else {
           info.req.user = decoded;
@@ -317,9 +314,9 @@ class VsSocket {
    *
    * @param {Object} socket - Socket object
    */
-  onClientConnected(socket) {
+  onClientConnected(socket, req) {
     const server = this;
-    const { user } = socket.upgradeReq;
+    const { user } = req;
 
     if (!user || !user.id) {
       return socket.terminate();
