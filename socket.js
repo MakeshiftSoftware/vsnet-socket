@@ -1,6 +1,6 @@
 /* eslint-disable prefer-arrow-callback */
 const http = require('http');
-const WebSocket = require('uws');
+const WebSocket = require('ws');
 const url = require('url');
 const express = require('express');
 const qs = require('query-string');
