@@ -1,17 +1,32 @@
 {
   "name": "vsnet-socket",
   "version": "1.0.0",
+  "author": "taapesh",
+  "private": true,
+  "repository": "https://github.com/MakeshiftSoftware/vsnet-socket",
+  "engines": {
+    "node": ">=8.0.0"
+  },
   "scripts": {
     "lint": "./node_modules/.bin/eslint src/**",
-    "clean": "rm -rf node_modules && yarn cache clean && yarn"
+    "clean": "rm -rf node_modules && rm -f yarn.lock && yarn cache clean && yarn",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "bufferutil": "^4.0.0",
     "express": "^4.16.3",
     "ioredis": "^4.0.0",
     "jsonwebtoken": "^8.3.0",
     "query-string": "^6.1.0",
     "url": "^0.11.0",
+    "utf-8-validate": "^5.0.1",
     "vsnet-logger": "MakeshiftSoftware/vsnet-logger#develop",
     "ws": "^6.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.18.2",
+    "eslint-config-airbnb-base": "^12.0.0",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1"
   }
 }
