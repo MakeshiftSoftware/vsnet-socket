@@ -19,23 +19,21 @@ class VsSocket {
    *
    * @param {Object} options - Server options
    */
-  constructor(options) {
-    const {
-      port,
-      secret,
-      pubsub,
-      store,
-      pingInterval = DEFAULT_PING_INTERVAL
-    } = options;
+  constructor({
+    port,
+    secret,
+    pubsub,
+    store,
+    pingInterval = DEFAULT_PING_INTERVAL
+  }) {
+    logger.info('[socket] Initializing socket server');
 
+    /* Initialize server attributes */
     this.port = port;
     this.secret = secret;
     this.pingInterval = pingInterval;
-
-    logger.info('[socket] Initializing socket server');
-
     this.users = {};
-    this.handlers = {};
+    this.eventHandlers = {};
 
     if (store) {
       this.initStore(store);
@@ -56,10 +54,9 @@ class VsSocket {
     logger.info('[socket] Initializing express app');
 
     const server = this;
-
     const app = express();
 
-    app.get('/healthz', async function(req, res) {
+    app.get('/healthz', async (req, res) => {
       try {
         // check if redis is still responding
         const actions = [
@@ -86,12 +83,12 @@ class VsSocket {
    * Initialize http server and websocket server
    */
   initServer() {
-    logger.info('[socket] Initializing express server');
+    logger.info('[socket] Initializing server');
 
     const server = http.createServer(this.app);
 
     this.wss = new WebSocket.Server({
-      server: server,
+      server,
       verifyClient: this.verifyClient(this.secret)
     });
 
@@ -133,7 +130,7 @@ class VsSocket {
    *
    * @param {Object} config - Store config
    */
-  initStore(config) {
+  initStore({ url, password }) {
     logger.info('[socket] Initializing redis store');
 
     const options = {
@@ -144,11 +141,11 @@ class VsSocket {
       reconnectOnError: this.redisReconnectStrategy
     };
 
-    if (config.password) {
-      options.password = config.password;
+    if (password) {
+      options.password = password;
     }
 
-    this.store = new Redis(config.url, options);
+    this.store = new Redis(url, options);
 
     function onReady() {
       logger.info('[socket] Redis store ready to receive commands');
@@ -171,7 +168,11 @@ class VsSocket {
    *
    * @param {Object} config - Pubsub config
    */
-  initPubsub(config) {
+  initPubsub({
+      url,
+      password,
+      channels = [DEFAULT_CHANNEL]
+    }) {
     logger.info('[socket] Initializing redis pubsub');
 
     const options = {
@@ -182,18 +183,16 @@ class VsSocket {
       reconnectOnError: this.redisReconnectStrategy
     };
 
-    if (config.password) {
-      options.password = config.password;
+    if (password) {
+      options.password = password;
     }
 
-    this.pub = new Redis(config.url, options);
-    this.sub = new Redis(config.url, options);
+    this.pub = new Redis(url, options);
+    this.sub = new Redis(url, options);
 
-    const channels = config.channels || [DEFAULT_CHANNEL];
-
-    for (let i = 0; i < channels.length; ++i) {
-      this.sub.subscribe(channels[i]);
-    }
+    channels.forEach((channel) => (
+      this.sub.subscribe(channel)
+    ));
 
     function onMessage(channel, message) {
       logger.info('[socket] Received pubsub message: ' + message);
@@ -201,13 +200,9 @@ class VsSocket {
       const m = this.parseMessage(message);
 
       if (m && m.data && m.recipient) {
-        logger.info('[socket] Publishing message');
+        logger.info('[socket] Relaying message');
 
-        if (Array.isArray(m.recipient)) {
-          this.relayMulti(m.data, m.recipient);
-        } else {
-          this.relaySingle(m.data, m.recipient);
-        }
+        this.relayMessage(m);
       }
     }
 
@@ -338,8 +333,8 @@ class VsSocket {
       socket.isAlive = true;
     });
 
-    if (server.handlers.connected) {
-      server.handlers.connected(socket);
+    if (server.onConnected) {
+      server.onConnected(socket);
     }
 
     logger.info('[socket] New socket connection with id: ' + user.id);
@@ -351,12 +346,10 @@ class VsSocket {
    * @param {Object} socket - Socket object
    */
   onClientDisconnected(socket) {
-    const server = this;
-
     delete this.users[socket.id];
 
-    if (server.handlers.disconnected) {
-      server.handlers.disconnected(socket);
+    if (this.onDisconnected) {
+      this.onDisconnected(socket);
     }
 
     logger.info('[socket] Socket disconnected: ' + socket.id);
@@ -369,7 +362,7 @@ class VsSocket {
    * @param {Function} callback - Callback function
    */
   on(event, callback) {
-    this.handlers[event] = callback;
+    this.eventHandlers[event] = callback;
   }
 
   /**
@@ -377,21 +370,17 @@ class VsSocket {
    * TODO: cleanup disconnected sockets
    */
   ping() {
-    const server = this;
-
-    for (let i = 0; i < server.wss.clients.length; ++i) {
-      const socket = server.wss.clients[i];
-
+    this.wss.clients.forEach((socket) => {
       if (socket.isAlive === false) {
         logger.info('[socket] Cleaning up dead socket: ' + socket.id);
 
-        delete server.users[socket.id];
+        delete this.users[socket.id];
         return socket.terminate();
       }
 
       socket.isAlive = false;
       socket.ping(noop);
-    }
+    });
   }
 
   /**
@@ -406,7 +395,7 @@ class VsSocket {
     const m = this.parseMessage(message);
 
     if (m) {
-      const handler = this.handlers[m.data.type];
+      const handler = this.eventHandlers[m.data.type];
 
       if (handler) {
         handler(m, socket);
@@ -428,7 +417,7 @@ class VsSocket {
         recipient: m.recipient
       };
     } catch (err) {
-      logger.error('[socket] Unable to parse message: ' + err.message);
+      logger.error('[socket] Unable to parse incoming message');
     }
   }
 
@@ -445,47 +434,52 @@ class VsSocket {
   /**
    * Send message to user
    *
-   * @param {(String|Object)} message - The message string or object
-   * @param {Object} socket - The socket object
+   * @param {String|Object} message - The message data
+   * @param {Object} socket - The recipient socket
    */
-  sendMessage(message, socket) {
-    if (typeof message === 'object') {
-      socket.send(JSON.stringify(message));
+  sendMessage(data, socket) {
+    logger.info('[socket] Sending message to user: ' + socket.id);
+
+    if (typeof data === 'object') {
+      socket.send(JSON.stringify(data));
     } else {
-      socket.send(message);
+      socket.send(data);
     }
   }
 
   /**
-   * Send message to a single user by user id
+   * Message recipient found handler
    *
-   * @param {Object} data - Message data
-   * @param {String} id - User id
+   * @param {Object|String} data - Message data to be sent
+   * @param {Object} socket - Recipient's socket object
    */
-  relaySingle(data, id) {
-    const socket = this.users[id];
+  onRecipientFound(data, socket) {
+    logger.info('[socket] Recipient socket found, sending message');
 
-    if (socket) {
-      logger.info('[socket] Recipient socket found, sending message');
-
-      this.sendMessage(data, socket);
-    }
+    this.sendMessage(data, socket);
   }
 
   /**
-   * Send message to multiple users using an array of user ids
+   * Send message to a user or list of users
    *
-   * @param {Object} data - Message data
-   * @param {Array} ids - Array of user ids
+   * @param {Object} m - Message object
    */
-  relayMulti(data, ids) {
-    for (let i = 0; i < ids.length; ++i) {
-      const socket = this.users[ids[i]];
+  relayMessage(m) {
+    const { data, recipient } = m;
 
-      if (socket) {
-        logger.info('[socket] Recipient socket found, sending message');
+    if (data === undefined || recipient === undefined) {
+      logger.info('[socket] Invalid message: missing data or recipient property');
+    }
 
-        this.sendMessage(data, socket);
+    if (Array.isArray(recipient)) {
+      recipient.forEach((r) => {
+        if (this.users[r]) {
+          this.onRecipientFound(data, this.users[r]);
+        }
+      });
+    } else {
+      if (this.users[recipient]) {
+        this.onRecipientFound(data, this.users[recipient]);
       }
     }
   }
@@ -511,7 +505,7 @@ class VsSocket {
    * @param {Function} cb - Callback function
    */
   onConnect(cb) {
-    this.handlers.connected = cb;
+    this.onConnected = cb;
   }
 
   /**
@@ -520,7 +514,7 @@ class VsSocket {
    * @param {Function} cb - Callback function
    */
   onDisconnect(cb) {
-    this.handlers.disconnected = cb;
+    this.onDisconnected = cb;
   }
 }
 
