@@ -26,6 +26,7 @@ class VsSocket {
     store,
     onConnect,
     onDisconnect,
+    events = {},
     pingInterval = DEFAULT_PING_INTERVAL
   }) {
     logger.info('[socket] Initializing socket server');
@@ -34,10 +35,10 @@ class VsSocket {
     this.port = port;
     this.secret = secret;
     this.pingInterval = pingInterval;
-    this.users = {};
-    this.eventHandlers = {};
+    this.events = events;
     this.onConnect = onConnect;
     this.onDisconnect = onDisconnect;
+    this.users = {};
 
     if (store) {
       this.initStore(store);
@@ -360,16 +361,6 @@ class VsSocket {
   }
 
   /**
-   * Register callback function for an event
-   *
-   * @param {String} event - Event name
-   * @param {Function} callback - Callback function
-   */
-  on(event, callback) {
-    this.eventHandlers[event] = callback;
-  }
-
-  /**
    * Ping sockets to check if they are alive
    * TODO: cleanup disconnected sockets
    */
@@ -399,7 +390,7 @@ class VsSocket {
     const m = this.parseMessage(message);
 
     if (m) {
-      const handler = this.eventHandlers[m.data.type];
+      const handler = this.events[m.data.type];
 
       if (handler) {
         handler(m, socket);
