@@ -24,6 +24,8 @@ class VsSocket {
     secret,
     pubsub,
     store,
+    onConnect,
+    onDisconnect,
     pingInterval = DEFAULT_PING_INTERVAL
   }) {
     logger.info('[socket] Initializing socket server');
@@ -34,6 +36,8 @@ class VsSocket {
     this.pingInterval = pingInterval;
     this.users = {};
     this.eventHandlers = {};
+    this.onConnect = onConnect;
+    this.onDisconnect = onDisconnect;
 
     if (store) {
       this.initStore(store);
@@ -169,10 +173,10 @@ class VsSocket {
    * @param {Object} config - Pubsub config
    */
   initPubsub({
-      url,
-      password,
-      channels = [DEFAULT_CHANNEL]
-    }) {
+    url,
+    password,
+    channels = [DEFAULT_CHANNEL]
+  }) {
     logger.info('[socket] Initializing redis pubsub');
 
     const options = {
@@ -477,10 +481,8 @@ class VsSocket {
           this.onRecipientFound(data, this.users[r]);
         }
       });
-    } else {
-      if (this.users[recipient]) {
-        this.onRecipientFound(data, this.users[recipient]);
-      }
+    } else if (this.users[recipient]) {
+      this.onRecipientFound(data, this.users[recipient]);
     }
   }
 
@@ -497,24 +499,6 @@ class VsSocket {
       lua: script,
       numberOfKeys: 0
     });
-  }
-
-  /**
-   * Define additional actions on client connected event
-   *
-   * @param {Function} cb - Callback function
-   */
-  onConnect(cb) {
-    this.onConnected = cb;
-  }
-
-  /**
-   * Define additional actions on client disconnected event
-   *
-   * @param {Function} cb - Callback function
-   */
-  onDisconnect(cb) {
-    this.onDisconnected = cb;
   }
 }
 
