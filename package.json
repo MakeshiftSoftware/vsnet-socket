@@ -1,32 +1,28 @@
 {
   "name": "vsnet-socket",
   "version": "1.0.0",
-  "author": "taapesh",
-  "private": true,
-  "repository": "https://github.com/MakeshiftSoftware/vsnet-socket",
+  "main": "src/index.js",
+  "license": "MIT",
   "engines": {
-    "node": ">=8.0.0"
-  },
-  "scripts": {
-    "lint": "./node_modules/.bin/eslint src/**",
-    "clean": "rm -rf node_modules && rm -f yarn.lock && yarn cache clean && yarn",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "node": ">=9.0.0"
   },
   "dependencies": {
-    "bufferutil": "^4.0.0",
-    "express": "^4.16.3",
-    "ioredis": "^4.0.0",
-    "jsonwebtoken": "^8.3.0",
-    "query-string": "^6.1.0",
-    "url": "^0.11.0",
-    "utf-8-validate": "^5.0.1",
-    "vsnet-logger": "MakeshiftSoftware/vsnet-logger#develop",
-    "ws": "^6.0.0"
+    "ioredis": "^4.9.0",
+    "jsonwebtoken": "^8.5.1",
+    "query-string": "^6.4.2",
+    "ws": "^6.2.1"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.1",
+    "utf-8-validate": "^5.0.2"
   },
   "devDependencies": {
-    "eslint": "^4.18.2",
-    "eslint-config-airbnb-base": "^12.0.0",
-    "eslint-plugin-import": "^2.7.0",
-    "eslint-plugin-node": "^5.1.1"
+    "eslint": "^5.15.3",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^4.1.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-node": "^8.0.1",
+    "eslint-plugin-prettier": "^3.0.1",
+    "prettier": "^1.16.4"
   }
 }

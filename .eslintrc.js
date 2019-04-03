@@ -1,14 +1,19 @@
 module.exports = {
   'env': {
-      'es6': true,
-      'node': true
+    'es6': true,
+    'node': true
+  },
+  'globals': {
+    'Node': true
   },
   'plugins': ['node'],
-  'extends': ['airbnb-base', 'plugin:node/recommended'],
+  'extends': ['airbnb-base', 'plugin:node/recommended', 'plugin:prettier/recommended'],
   'rules': {
-    'arrow-body-style': 0,
-    'comma-dangle': ['error', 'never'],
-    'no-unused-vars': ['error', { 'argsIgnorePattern': 'socket' }],
+    'max-len': [2, { 'code': 100, 'tabWidth': 2 }],
+    'no-mixed-operators': 0,
+    'no-bitwise': 0,
+    'vars-on-top': 0,
+    'no-unused-vars': ['error', { 'argsIgnorePattern': 'next' }],
     'no-plusplus': 0,
     'space-before-function-paren': 0,
     'prefer-destructuring': 0,
@@ -20,6 +25,8 @@ module.exports = {
     'prefer-template': 0,
     'consistent-return': 0,
     'object-shorthand': 0,
-    'arrow-parens': 0
+    'no-await-in-loop': 0,
+    'no-continue': 0,
+    'arrow-parens': ['error', 'as-needed'],
   }
 };
