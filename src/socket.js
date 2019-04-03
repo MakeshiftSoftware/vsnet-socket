@@ -9,7 +9,7 @@ function noop() {}
 /**
  * Class representing a WebSocket server.
  */
-class VsnetSocket {
+class WebsocketServer {
   /**
    * Create a `VsSocketServer` instance.
    *
@@ -204,4 +204,4 @@ class VsnetSocket {
   }
 }
 
-module.exports = VsnetSocket;
+module.exports = WebsocketServer;

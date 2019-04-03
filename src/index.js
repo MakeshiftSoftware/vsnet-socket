@@ -1,3 +1,3 @@
-const VsnetSocket = require('./socket');
+const socket = require('./socket');
 
-module.exports = VsnetSocket;
+module.exports = socket;
