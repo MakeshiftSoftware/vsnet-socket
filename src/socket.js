@@ -6,11 +6,15 @@ const jwt = require('jsonwebtoken');
 
 function noop() {}
 
+/**
+ * Class representing a WebSocket server.
+ */
 class VsnetSocket {
   /**
    * Create a `VsSocketServer` instance.
    *
    * @param {Object} options Configuration options
+   * @param {Object} options.extensions Optional modules to add to server instance
    * @param {Boolean} options.trackUsers Specifies whether or not to track users
    * @param {Number} options.maxPayload The maximum allowed message size
    * @param {http.Server} options.server A pre-created HTTP/S server to use
@@ -24,6 +28,7 @@ class VsnetSocket {
   constructor(options) {
     options = Object.assign(
       {
+        extensions: null,
         trackUsers: true,
         pubsub: null,
         secret: null,
@@ -40,6 +45,15 @@ class VsnetSocket {
       throw new TypeError(
         'if pubsub option if specified, "pubsub.url" and "pubsub.channel" must be provided',
       );
+    }
+
+    //
+    // Optionally add extensions to instance.
+    //
+    if (options.extensions) {
+      Object.keys(options.extensions).forEach(key => {
+        this[key] = options.extensions[key];
+      });
     }
 
     //
