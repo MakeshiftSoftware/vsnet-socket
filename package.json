@@ -1,6 +1,6 @@
 {
   "name": "vsnet-sockets",
-  "version": "1.0.0",
+  "version": "1.0.10",
   "main": "src/index.js",
   "license": "MIT",
   "engines": {
